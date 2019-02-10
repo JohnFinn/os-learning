@@ -14,13 +14,7 @@ extern crate pi;
 extern crate stack_vec;
 
 use pi::timer::*;
-
-const GPIO_BASE: usize = 0x3F000000 + 0x200000;
-
-const GPIO_FSEL1: *mut u32 = (GPIO_BASE + 0x04) as *mut u32;
-const GPIO_SET0: *mut u32 = (GPIO_BASE + 0x1C) as *mut u32;
-const GPIO_CLR0: *mut u32 = (GPIO_BASE + 0x28) as *mut u32;
-
+use pi::gpio::*;
 
 pub mod lang_items;
 pub mod mutex;
@@ -29,14 +23,14 @@ pub mod shell;
 
 #[no_mangle]
 pub unsafe extern "C" fn kmain() {
+    let mut pin = Gpio::new(16);
     // STEP 1: Set GPIO Pin 16 as output.
-    GPIO_FSEL1.write_volatile(0b001 << 18);
+    let mut pin = pin.into_output();
     // STEP 2: Continuously set and clear GPIO 16.
-    let gpio16: u32 = 0b1 << 16;
     loop {
-        GPIO_SET0.write_volatile(gpio16);
-        spin_sleep_ms(1000);
-        GPIO_CLR0.write_volatile(gpio16);
+        pin.set();
+        spin_sleep_ms(3000);
+        pin.clear();
         spin_sleep_ms(500);
     }
 
