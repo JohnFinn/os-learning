@@ -103,8 +103,8 @@ impl Gpio<Uninitialized> {
     /// and returns a `Gpio` structure in the `Alt` state.
     pub fn into_alt(self, function: Function) -> Gpio<Alt> {
         // 9, 19, 29, 39, 49, 53
-        let reg_num = self.pin % 10;
-        let offset = (self.pin / 10) * 3;
+        let reg_num = self.pin / 10;
+        let offset = (self.pin % 10) * 3;
         self.registers.function_select[reg_num as usize].or_mask((function as u32) << offset);
         self.transition()
     }
