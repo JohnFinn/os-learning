@@ -19,31 +19,31 @@ pub enum Function {
 
 #[repr(C)]
 #[allow(non_snake_case)]
-struct Registers {
-    FSEL: [Volatile<u32>; 6],
+struct GpioRegisters {
+    function_select: [Volatile<u32>; 6],
     __r0: Reserved<u32>,
-    SET: [WriteVolatile<u32>; 2],
+    set: [WriteVolatile<u32>; 2],
     __r1: Reserved<u32>,
-    CLR: [WriteVolatile<u32>; 2],
+    clear: [WriteVolatile<u32>; 2],
     __r2: Reserved<u32>,
-    LEV: [ReadVolatile<u32>; 2],
+    level: [ReadVolatile<u32>; 2],
     __r3: Reserved<u32>,
-    EDS: [Volatile<u32>; 2],
+    event_detect_status: [Volatile<u32>; 2],
     __r4: Reserved<u32>,
-    REN: [Volatile<u32>; 2],
+    rising_edge_detect_enable : [Volatile<u32>; 2],
     __r5: Reserved<u32>,
-    FEN: [Volatile<u32>; 2],
+    falling_edge_detect_enable: [Volatile<u32>; 2],
     __r6: Reserved<u32>,
-    HEN: [Volatile<u32>; 2],
+    high_detect_enable: [Volatile<u32>; 2],
     __r7: Reserved<u32>,
-    LEN: [Volatile<u32>; 2],
+    low_detect_enable: [Volatile<u32>; 2],
     __r8: Reserved<u32>,
-    AREN: [Volatile<u32>; 2],
+    async_rising_edge_detect : [Volatile<u32>; 2],
     __r9: Reserved<u32>,
-    AFEN: [Volatile<u32>; 2],
+    async_falling_edge_detect_enable: [Volatile<u32>; 2],
     __r10: Reserved<u32>,
-    PUD: Volatile<u32>,
-    PUDCLK: [Volatile<u32>; 2],
+    pull_up_down_enable: Volatile<u32>,
+    pull_up_down_enable_clock: [Volatile<u32>; 2],
 }
 
 /// Possible states for a GPIO pin.
@@ -60,7 +60,7 @@ states! {
 /// `into_alt` methods before it can be used.
 pub struct Gpio<State> {
     pin: u8,
-    registers: &'static mut Registers,
+    registers: &'static mut GpioRegisters,
     _state: PhantomData<State>
 }
 
@@ -93,7 +93,7 @@ impl Gpio<Uninitialized> {
         }
 
         Gpio {
-            registers: unsafe { &mut *(GPIO_BASE as *mut Registers) },
+            registers: unsafe { &mut *(GPIO_BASE as *mut GpioRegisters) },
             pin: pin,
             _state: PhantomData
         }
@@ -102,7 +102,11 @@ impl Gpio<Uninitialized> {
     /// Enables the alternative function `function` for `self`. Consumes self
     /// and returns a `Gpio` structure in the `Alt` state.
     pub fn into_alt(self, function: Function) -> Gpio<Alt> {
-        unimplemented!()
+        // 9, 19, 29, 39, 49, 53
+        let reg_num = self.pin % 10;
+        let offset = (self.pin / 10) * 3;
+        self.registers.function_select[reg_num as usize].or_mask((function as u32) << offset);
+        self.transition()
     }
 
     /// Sets this pin to be an _output_ pin. Consumes self and returns a `Gpio`
